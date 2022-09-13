@@ -21,6 +21,8 @@ int ballX = 100;
 int ballY = 500;
 int ballXvelo = 1;
 int ballYvelo = 1;
+int ballConserved = 2;
+int combo = 0;
 
 int bumper1Y = 512;
 int bumper1X = 96;
@@ -29,6 +31,7 @@ int bumperSize = 176;
 int bumper2Y = 512;
 int bumper2X = 936;
 int bumper2velo = 0;
+int bumperSpeed = 2;
 
 int main(int argc, char* args[])
  {	
@@ -65,21 +68,19 @@ int main(int argc, char* args[])
 			switch(event.key.keysym.scancode)
 		{
 		case SDL_SCANCODE_W:
-			printf("bumper1velo = %d", bumper1velo);
-			bumper1velo = -1;
-			printf("bumper1velo = %d", bumper1velo);
+			bumper1velo = -bumperSpeed;
 			break;
 			
 		case SDL_SCANCODE_S:
-			bumper1velo = 1;
+			bumper1velo = bumperSpeed;
 			break;
 			
 		case SDL_SCANCODE_UP:
-			bumper2velo = -1;
+			bumper2velo = -bumperSpeed;
 			break;
 		
 		case SDL_SCANCODE_DOWN:
-			bumper2velo = 1;
+			bumper2velo = bumperSpeed;
 			break;
 		
 		}
@@ -127,9 +128,26 @@ atexit(SDL_Quit);
 	return EXIT_SUCCESS;
  }
 
-int bounce(int velo)
+void bounceAngle(bumperY) 
 {
-	return -velo;
+	int angle = (bumperY + (bumperSize / 2)) - ballY;
+	printf("\n		angle: %d\n", angle);
+	angle /= 18;
+	ballXvelo = 0;
+	ballYvelo = 0;
+	for(int i = 0;i < ballConserved;i++)
+	{
+		ballXvelo++;
+		ballYvelo -= angle;
+		
+	}
+	if(combo == 2){
+	ballConserved++;
+	combo = 0;
+		}
+	else if(combo == 0)
+	ballConserved == 3;
+	combo++;
 }
 
 void drawRectangles()
@@ -157,7 +175,7 @@ void drawRectangles()
 
 int checkToScore()
 {
-	if (ballX >= maxX)
+	if (ballX >= maxX + ballXvelo)
 	{
 		 score1++;
 		printf("p1 score\n");
@@ -166,17 +184,21 @@ int checkToScore()
 		ballXvelo = 1;
 		ballYvelo = 1;
 		SDL_Delay(1000);
+		ballConserved = 2;
+		combo = 0;
 		return 0;
 	 }
-	if (ballX <= minX)
+	if (ballX <= minX - ballXvelo)
 	{
 		score2++;
 		printf("p2 score\n");
 		SDL_Delay(1000);
-		ballXvelo = 1;
+		ballXvelo = -1;
 		ballYvelo = 1;
 		ballX = 512;
 		ballY = rand() % 1024;
+		ballConserved = 2;
+		combo = 0;
 		return 0;
 	}
 	if (score1 >= 3 || score2 >= 3)
@@ -197,19 +219,19 @@ int checkYbound() //Y range of object to check
 	//search #rectanglesize
 	if (bumper1velo + bumper1Y + bumperSize > maxY)
 	{
-		bumper1Y--;	
+		bumper1Y -= bumperSpeed;	
 	}
 	if (bumper1velo + bumper1Y < minY)
 	{
-		bumper1Y++;
+		bumper1Y += bumperSpeed;
 	}
 	if (bumper2velo + bumper2Y + bumperSize > maxY)
 	{
-		bumper2Y--;	
+		bumper2Y -= bumperSpeed;	
 	}
 	if (bumper2velo + bumper2Y < minY)
 	{
-		bumper2Y++;
+		bumper2Y += bumperSpeed;
 	}
 	if (ballY + 20 > maxY || ballY < minY)
 	{
@@ -226,14 +248,15 @@ as argument */
 	
 //to see the definition of the rectangles drawn to screen
 //search #rectanglesize
-	if(ballX == bumper1X && (ballY + 20 > bumper1Y && ballY < bumper1Y + bumperSize))
+	if(ballX <= bumper1X && ballX >= bumper1X + ballXvelo && (ballY + 20 > bumper1Y && ballY < bumper1Y + bumperSize))
 		{
-			ballXvelo = bounce(ballXvelo);
+			bounceAngle(bumper1Y);
 			return 0;
 		}
-	if(ballX == bumper2X - 20 && (ballY + 20 > bumper2Y && ballY < bumper2Y + bumperSize))
+	if(ballX >= bumper2X - 20 && ballX <= bumper2X + ballXvelo - 20 && (ballY + 20 > bumper2Y && ballY < bumper2Y + bumperSize))
 		{
-			ballXvelo = bounce(ballXvelo);
+			bounceAngle(bumper2Y);
+			ballXvelo = -ballXvelo; //make it bounce the correct direction
 			return 0;
 		}
 return 0;
